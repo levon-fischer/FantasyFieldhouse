@@ -12,6 +12,8 @@ from fantasyApp.users.forms import (
 )
 from fantasyApp.users.utils import save_picture, send_reset_email
 from fantasyApp.sleeper_data.users import register_user
+from fantasyApp.sleeper_data.leagues import check_for_new_leagues
+
 
 users = Blueprint('users', __name__)
 
@@ -26,7 +28,9 @@ def register():
             "utf-8"
         )
         # Create a new user
-        register_user(form.username.data, form.email.data, hashed_password)
+        user_id = register_user(form.username.data, form.email.data, hashed_password)
+        # Check for new leagues to add to the database
+        check_for_new_leagues(user_id)
         flash(f"Your account has been created! You are now able to log in", "success")
         return redirect(url_for("users.login"))
     return render_template("register.html", title="Register", form=form)
