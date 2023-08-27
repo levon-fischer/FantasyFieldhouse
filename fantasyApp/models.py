@@ -6,6 +6,22 @@ from fantasyApp import db, login_manager
 from flask_login import UserMixin
 
 
+user_season_association = db.Table('user_season_association',
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+    db.Column('season_id', db.Integer, db.ForeignKey('season.id'), primary_key=True)
+)
+
+user_league_association = db.Table('user_league_association',
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+    db.Column('league_id', db.Integer, db.ForeignKey('league.id'), primary_key=True)
+)
+
+player_team_association = db.Table('player_team_association',
+    db.Column('team_id', db.Integer, db.ForeignKey('team.id'), primary_key=True),
+    db.Column('player_id', db.Integer, db.ForeignKey('player.id'), primary_key=True)
+)
+
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
@@ -24,9 +40,14 @@ class User(db.Model, UserMixin):
     password = db.Column(db.String(60), nullable=False)
     # Relationships
     posts = db.relationship("Post", backref="author", lazy="dynamic")
-    leagues = db.relationship('League', backref='user', lazy='dynamic')
-    teams = db.relationship('Team', backref='user', lazy='dynamic')
-    matchups = db.relationship('Matchup', backref='user', lazy='dynamic')
+    teams = db.relationship('Team', backref='owner', lazy='dynamic')
+    matchups_as_owner = db.relationship('Matchup', foreign_keys='matchup.team_id', backref='user', lazy='dynamic')
+    matchups_as_opponent = db.relationship('Matchup', foreign_keys='matchup.opponent_owner_id', backref='opponent_user', lazy='dynamic')
+    # Many-to-many relationships
+    seasons = db.relationship('Season', secondary=user_season_association, lazy='subquery',
+                              backref=db.backref('users', lazy=True))
+    leagues = db.relationship('League', secondary=user_league_association, lazy='subquery',
+                              backref=db.backref('users', lazy=True))
     # display_name = db.Column(db.String(64), index=True, unique=True)
     # total_wins = db.Column(db.Integer, index=True, unique=False)
     # total_losses = db.Column(db.Integer, index=True, unique=False)
@@ -56,11 +77,13 @@ class User(db.Model, UserMixin):
 
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    # Attributes
     title = db.Column(db.String(100), index=True, unique=False, nullable=False)
     date_posted = db.Column(
         db.DateTime, index=False, unique=False, nullable=False, default=datetime.utcnow
     )
     content = db.Column(db.Text, index=False, unique=False, nullable=False)
+    # Foreign Keys
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
 
     def __repr__(self):
@@ -76,8 +99,11 @@ class League(db.Model):
     # Foreign Keys
     current_season_id = db.Column(db.Integer, db.ForeignKey('season.id'), index=True, unique=True)
     # Relationships
-    users = db.relationship('User', backref='league', lazy='dynamic')
+    users = db.relationship('User', backref='league', lazy='dynamic') # many to many
     seasons = db.relationship('Season', backref='league', lazy='select')
+    matchups = db.relationship('Matchup', backref='league', lazy='dynamic')
+    teams = db.relationship('Team', backref='league', lazy='dynamic')
+    current_season = db.relationship('Season', foreign_keys=[current_season_id], post_update=True)
 
     # def fetch_seasons(self):
     #     seasons_data = self.fetch_from_db_or_api(self.id)
@@ -101,7 +127,7 @@ class Season(db.Model):
     draft_id = db.Column(db.Integer, index=False, unique=False)
     # Relationships
     matchups = db.relationship('Matchup', backref='season', lazy='dynamic')
-    users = db.relationship('User', backref='season', lazy='dynamic')
+    users = db.relationship('User', backref='season', lazy='dynamic') # many to many
     teams = db.relationship('Team', backref='season', lazy='dynamic')
 
 
@@ -119,29 +145,38 @@ class Season(db.Model):
 
     def __repr__(self):
         return f'<Season {self.id}>'
-#
-#
-# class Matchup(db.Model):
-#     id = db.Column(db.Integer, primary_key=True)
-#     matchup_id = db.Column(db.Integer, index=True, unique=False)
-#     week = db.Column(db.Integer, index=True, unique=False)
-#     year = db.Column(db.Integer, index=True, unique=False)
-#     season_id = db.Column(db.Integer, db.ForeignKey('season.id'))
-#     team_id = db.Column(db.Integer, db.ForeignKey('user.id'), index=True, unique=False)
-#     opponent_id = db.Column(db.Integer, db.ForeignKey('user.id'), index=True, unique=False)
-#     points_for = db.Column(db.Integer, index=False, unique=False)
-#     points_against = db.Column(db.Integer, index=False, unique=False)
-#     win = db.Column(db.Boolean, index=False, unique=False)
-#     loss = db.Column(db.Boolean, index=False, unique=False)
-#     tie = db.Column(db.Boolean, index=False, unique=False)
-#     playoff = db.Column(db.Boolean, index=False, unique=False)
-#     consolation = db.Column(db.Boolean, index=False, unique=False)
-#     championship = db.Column(db.Boolean, index=False, unique=False)
-#
-#     def __repr__(self):
-#         return f'<Matchup {self.id}>'
-#
-#
+
+
+class Matchup(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    # Attributes
+    matchup_id = db.Column(db.Integer, index=True, unique=False) # season_id + week + matchup_id
+    week = db.Column(db.Integer, index=True, unique=False)
+    year = db.Column(db.Integer, index=True, unique=False)
+    points_for = db.Column(db.Integer, index=False, unique=False)
+    points_against = db.Column(db.Integer, index=False, unique=False)
+    win = db.Column(db.Boolean, index=False, unique=False)
+    loss = db.Column(db.Boolean, index=False, unique=False)
+    tie = db.Column(db.Boolean, index=False, unique=False)
+    playoff = db.Column(db.Boolean, index=False, unique=False)
+    consolation = db.Column(db.Boolean, index=False, unique=False)
+    championship = db.Column(db.Boolean, index=False, unique=False)
+    # Foreign Keys
+    league_id = db.Column(db.Integer, db.ForeignKey('league.id'), index=True, unique=False)
+    season_id = db.Column(db.Integer, db.ForeignKey('season.id'))
+    team_id = db.Column(db.Integer, db.ForeignKey('team.id'), index=True, unique=False)
+    owner_id = db.Column(db.Integer, db.ForeignKey('user.id'), index=True, unique=False)
+    opponent_team_id = db.Column(db.Integer, db.ForeignKey('team.id'), index=True, unique=False)
+    opponent_owner_id = db.Column(db.Integer, db.ForeignKey('user.id'), index=True, unique=False)
+
+    # Relationships
+
+    def __repr__(self):
+        return f'<Matchup {self.id}>'
+
+
+
+
 class Team(db.Model):
     id = db.Column(db.Integer, primary_key=True) # Season ID + Roster ID
     # Attributes
@@ -158,10 +193,12 @@ class Team(db.Model):
     # Foreign Keys
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     season_id = db.Column(db.Integer, db.ForeignKey('season.id'))
+    league_id  = db.Column(db.Integer, db.ForeignKey('league.id'))
     # Relationships
-    matchups = db.relationship('Matchup', backref='team', lazy='dynamic') # many to many
-    players = db.relationship('Player', backref='team', lazy='dynamic') # many to many
-
+    matchups_as_owner = db.relationship('Matchup', foreign_keys='matchup.team_id', backref='team', lazy='dynamic')
+    matchups_as_opponent = db.relationship('Matchup', foreign_keys='matchup.opponent_team_id', backref='opponent_team', lazy='dynamic')
+    players = db.relationship('Player', secondary=player_team_association, lazy='subquery',
+                              backref=db.backref('teams', lazy=True))
     def __repr__(self):
         return f'<Team {self.name}>'
 
@@ -180,6 +217,9 @@ class Player(db.Model):
     weight = db.Column(db.Integer, index=False, unique=False)
     height = db.Column(db.Integer, index=False, unique=False)
     injury_status = db.Column(db.Boolean, index=False, unique=False)
+
+
+
 
 
 # class NflState(db.Model):
