@@ -15,7 +15,7 @@ from fantasyApp.sleeper_data.users import register_user
 from fantasyApp.sleeper_data.leagues import check_for_new_leagues
 
 
-users = Blueprint('users', __name__)
+users = Blueprint("users", __name__)
 
 
 @users.route("/register", methods=["GET", "POST"])
@@ -29,11 +29,18 @@ def register():
         )
         # Create a new user
         user_id = register_user(form.username.data, form.email.data, hashed_password)
-        # Check for new leagues to add to the database
-        check_for_new_leagues(user_id)
-        flash(f"Your account has been created! You are now able to log in", "success")
-        return redirect(url_for("users.login"))
+        return redirect(url_for("users.build_profile", user_id=user_id))
     return render_template("register.html", title="Register", form=form)
+
+
+@users.route("/register/<string:user_id>", methods=["GET", "POST"])
+def build_profile(user_id):
+    if current_user.is_authenticated:
+        return redirect(url_for("main.home"))
+    check_for_new_leagues.apply_async(args=[user_id])
+    flash(f"Your account has been created! You are now able to log in", "success")
+    return redirect(url_for("users.login"))
+    return render_template("build_profile.html", title="Build Profile")
 
 
 @users.route("/login", methods=["GET", "POST"])
@@ -82,14 +89,20 @@ def account():
         "account.html", title="Account", image_file=image_file, form=form
     )
 
+
 @users.route("/user/<string:username>")
 def user_posts(username):
     page = request.args.get("page", 1, type=int)
-    user = User.query.filter_by(username=username).first_or_404()  # Get the user or return 404
-    posts = Post.query.filter_by(author=user)\
-        .order_by(Post.date_posted.desc())\
+    user = User.query.filter_by(
+        username=username
+    ).first_or_404()  # Get the user or return 404
+    posts = (
+        Post.query.filter_by(author=user)
+        .order_by(Post.date_posted.desc())
         .paginate(page=page, per_page=5)
+    )
     return render_template("user_posts.html", posts=posts, user=user)
+
 
 @users.route("/reset_password", methods=["GET", "POST"])
 def reset_request():
@@ -99,8 +112,10 @@ def reset_request():
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()  # Get the user
         send_reset_email(user)  # Send the reset email
-        flash('An email has been sent with instructions to reset your password.', 'info')
-        return redirect(url_for('users.login'))
+        flash(
+            "An email has been sent with instructions to reset your password.", "info"
+        )
+        return redirect(url_for("users.login"))
     return render_template("reset_request.html", title="Reset Password", form=form)
 
 
@@ -110,8 +125,8 @@ def reset_token(token):
         return redirect(url_for("main.home"))
     user = User.verify_reset_token(token)
     if user is None:
-        flash('That is an invalid or expired token', 'warning')
-        return redirect(url_for('users.reset_request'))
+        flash("That is an invalid or expired token", "warning")
+        return redirect(url_for("users.reset_request"))
     form = ResetPasswordForm()  # Create a new form
     if form.validate_on_submit():
         hashed_password = bcrypt.generate_password_hash(form.password.data).decode(
