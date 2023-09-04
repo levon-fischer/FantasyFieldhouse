@@ -1,0 +1,12 @@
+.idea
+fantasyApp.db
+pyvenv.cfg
+!/fantasyApp/static/profile_pics/
+!/include
+/Lib/
+/Scripts/
+/share/
+/include/
+/migrations/
+/logs/
+/venv/
