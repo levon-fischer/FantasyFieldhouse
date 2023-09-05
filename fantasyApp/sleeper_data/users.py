@@ -1,3 +1,5 @@
+from sqlalchemy import func
+
 from fantasyApp.sleeper_data.utils import SleeperAPI
 from fantasyApp.models import User
 from fantasyApp import db
@@ -5,6 +7,7 @@ from flask import current_app
 
 
 def register_user(username, email, password):
+    username = username.lower()
     user = User.query.filter_by(username=username).first()
     if user:  # If the user exists in our database already
         # update that user's email and password and registration status
@@ -18,7 +21,7 @@ def register_user(username, email, password):
         user_data = SleeperAPI.fetch_user(username)
         user = User(
             id=user_data["user_id"],
-            username=user_data["username"],
+            username=user_data["username"].lower(),
             email=email,
             password=password,
             registered=True,
@@ -30,7 +33,7 @@ def register_user(username, email, password):
 
 def add_unregistered_user(user_id, username):
     current_app.logger.info(f"Adding unregistered user {username} to our database")
-    user = User(id=user_id, username=username, registered=False)
+    user = User(id=user_id, username=username.lower(), registered=False)
     db.session.add(user)
     db.session.commit()
 

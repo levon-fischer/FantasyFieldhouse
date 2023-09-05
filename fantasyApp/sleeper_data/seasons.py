@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from fantasyApp.sleeper_data.matchups import (
     add_matchups_from_season,
     add_postseason_matchups_from_season,
@@ -39,9 +41,15 @@ def add_season_from_data(season_data, league_id):
     add_matchups_from_season(
         season_id, league_id, roster_map, start_week, playoff_start
     )
-    add_postseason_matchups_from_season(
-        season_id, league_id, roster_map, playoff_start, total_teams
-    )
+
+    current_year = datetime.now().year
+    if year != current_year:
+        current_app.logger.info(
+            f"Starting postseason matchups. year {year} | sys year {current_year}"
+        )
+        add_postseason_matchups_from_season(
+            season_id, league_id, roster_map, playoff_start, total_teams
+        )
 
 
 def add_season_from_api(season_id, league_id):

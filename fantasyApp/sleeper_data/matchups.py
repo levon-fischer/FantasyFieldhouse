@@ -140,34 +140,36 @@ def process_single_matchup(
 ):
     roster_id = matchup_data["roster_id"]
     matchup_info = bracket_data.get((round, roster_id), {})
-    current_app.logger.info(f"Matchup info: {matchup_info}")
-    placement = matchup_info.get("placement", None)
-    team_id = roster_map[roster_id]["team_id"]
+    # if matchup_info isn't empty and matchup_info["winner"] isn't None
+    if matchup_info and matchup_info.get("winner") is not None:
+        current_app.logger.info(f"Matchup info: {matchup_info}")
+        placement = matchup_info.get("placement", None)
+        team_id = roster_map[roster_id]["team_id"]
 
-    if placement is not None:
-        team = Team.query.filter_by(id=team_id).first()
-        team.place = placement
-        db.session.commit()
+        if placement is not None:
+            team = Team.query.filter_by(id=team_id).first()
+            team.place = placement
+            db.session.commit()
 
-    is_playoff = matchup_info.get("type") == "playoff"
-    is_consolation = matchup_info.get("type") == "consolation"
-    is_championship = placement is not None and placement <= 2
-    is_toilet_bowl = placement is not None and placement >= total_teams - 1
-    current_app.logger.info(
-        f"Adding postseason matchup: week->{week}, roster_id->{roster_id}"
-    )
-    add_matchup(
-        matchup_data=matchup_data,
-        opponent_data=opponent_data,
-        season_id=season_id,
-        league_id=league_id,
-        week=week,
-        roster_map=roster_map,
-        is_playoff=is_playoff,
-        is_consolation=is_consolation,
-        is_championship=is_championship,
-        is_toilet_bowl=is_toilet_bowl,
-    )
+        is_playoff = matchup_info.get("type") == "playoff"
+        is_consolation = matchup_info.get("type") == "consolation"
+        is_championship = placement is not None and placement <= 2
+        is_toilet_bowl = placement is not None and placement >= total_teams - 1
+        current_app.logger.info(
+            f"Adding postseason matchup: week->{week}, roster_id->{roster_id}"
+        )
+        add_matchup(
+            matchup_data=matchup_data,
+            opponent_data=opponent_data,
+            season_id=season_id,
+            league_id=league_id,
+            week=week,
+            roster_map=roster_map,
+            is_playoff=is_playoff,
+            is_consolation=is_consolation,
+            is_championship=is_championship,
+            is_toilet_bowl=is_toilet_bowl,
+        )
 
 
 def add_postseason_matchups_from_week(

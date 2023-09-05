@@ -27,7 +27,7 @@ def register():
         hashed_password = bcrypt.generate_password_hash(form.password.data).decode(
             "utf-8"
         )
-        # Create a new user
+        # Create a new user or register an existing user
         user_id = register_user(form.username.data, form.email.data, hashed_password)
         # Build out the user's profile by adding all their data to the database
         check_for_new_leagues(user_id)
