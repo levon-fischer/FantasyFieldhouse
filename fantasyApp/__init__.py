@@ -18,16 +18,6 @@ login_manager.login_view = "users.login"
 login_manager.login_message_category = "info"
 
 
-# def make_celery(app):
-#     celery = Celery(
-#         app.import_name,
-#         backend=app.config["CELERY_RESULT_BACKEND"],
-#         broker=app.config["CELERY_BROKER_URL"],
-#     )
-#     celery.conf.update(app.config)
-#     return celery
-
-
 def celery_init_app(app: Flask) -> Celery:
     class FlaskTask(Task):
         def __call__(self, *args: object, **kwargs: object) -> object:

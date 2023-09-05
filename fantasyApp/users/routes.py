@@ -29,18 +29,36 @@ def register():
         )
         # Create a new user
         user_id = register_user(form.username.data, form.email.data, hashed_password)
-        return redirect(url_for("users.build_profile", user_id=user_id))
+        # Build out the user's profile by adding all their data to the database
+        check_for_new_leagues(user_id)
+        flash(f"Your account has been created! You are now able to log in", "success")
+        return redirect(url_for("users.login"))
     return render_template("register.html", title="Register", form=form)
 
 
-@users.route("/register/<string:user_id>", methods=["GET", "POST"])
-def build_profile(user_id):
-    if current_user.is_authenticated:
-        return redirect(url_for("main.home"))
-    check_for_new_leagues.apply_async(args=[user_id])
-    flash(f"Your account has been created! You are now able to log in", "success")
-    return redirect(url_for("users.login"))
-    return render_template("build_profile.html", title="Build Profile")
+# @users.route("/register", methods=["GET", "POST"])
+# def register():
+#     if current_user.is_authenticated:
+#         return redirect(url_for("main.home"))
+#     form = RegistrationForm()
+#     if form.validate_on_submit():
+#         hashed_password = bcrypt.generate_password_hash(form.password.data).decode(
+#             "utf-8"
+#         )
+#         # Create a new user
+#         user_id = register_user(form.username.data, form.email.data, hashed_password)
+#         return redirect(url_for("users.build_profile", user_id=user_id))
+#     return render_template("register.html", title="Register", form=form)
+
+
+# @users.route("/register/<string:user_id>", methods=["GET", "POST"])
+# def build_profile(user_id):
+#     if current_user.is_authenticated:
+#         return redirect(url_for("main.home"))
+#     check_for_new_leagues.apply_async(args=[user_id])
+#     flash(f"Your account has been created! You are now able to log in", "success")
+#     return redirect(url_for("users.login"))
+#     return render_template("build_profile.html", title="Build Profile")
 
 
 @users.route("/login", methods=["GET", "POST"])

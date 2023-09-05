@@ -12,7 +12,7 @@ from fantasyApp import db
 from flask import current_app
 
 
-@shared_task(name="check_for_new_leagues")
+# @shared_task(name="check_for_new_leagues")
 def check_for_new_leagues(user_id):
     current_year = datetime.now().year
 
