@@ -5,7 +5,7 @@ from flask import current_app
 
 
 def add_team(team_data, team_id, season_id, league_id, year, name, commish):
-    current_app.logger.info(f"Adding team {team_id} to our database")
+    current_app.logger.info(f"Adding team {team_id}|{name} to our database")
     team = Team(
         id=team_id,  # Season ID + Roster ID
         season_id=season_id,
@@ -18,7 +18,6 @@ def add_team(team_data, team_id, season_id, league_id, year, name, commish):
         losses=team_data["settings"]["losses"],
         ties=team_data["settings"]["ties"],
         points_for=team_data["settings"]["fpts"],
-        total_moves=team_data["settings"]["total_moves"],
         is_commish=commish,
     )
     db.session.add(team)

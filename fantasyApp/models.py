@@ -205,10 +205,12 @@ class Matchup(db.Model):
     season_id = db.Column(
         db.Integer, db.ForeignKey("season.id"), index=True, unique=False
     )
-    team_id = db.Column(db.Integer, db.ForeignKey("team.id"), index=True, unique=False)
+    team_id = db.Column(
+        db.String(64), db.ForeignKey("team.id"), index=True, unique=False
+    )
     owner_id = db.Column(db.Integer, db.ForeignKey("user.id"), index=True, unique=False)
     opponent_team_id = db.Column(
-        db.Integer, db.ForeignKey("team.id"), index=True, unique=False
+        db.String(64), db.ForeignKey("team.id"), index=True, unique=False
     )
     opponent_owner_id = db.Column(
         db.Integer, db.ForeignKey("user.id"), index=True, unique=False
