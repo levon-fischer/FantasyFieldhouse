@@ -1,3 +1,5 @@
+import os.path
+
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
@@ -34,7 +36,7 @@ def celery_init_app(app: Flask) -> Celery:
 def create_app(config_class=Config):
     # Initialize fantasyApp
     app = Flask(__name__)
-    app.config.from_object(Config)
+    app.config.from_object(config_class)
 
     db.init_app(app)
     migrate.init_app(app, db)
@@ -42,6 +44,14 @@ def create_app(config_class=Config):
     mail.init_app(app)
     login_manager.init_app(app)
     celery_init_app(app)
+
+    # Check if the database exists, if not create it
+    with app.app_context():
+        db_path = config_class.SQLALCHEMY_DATABASE_URI.replace("sqlite:///", "")
+        # Create the database if it does not exist
+        if not os.path.exists(db_path):
+            from fantasyApp import models
+            db.create_all()
 
     from fantasyApp.users.routes import users
     from fantasyApp.main.routes import main

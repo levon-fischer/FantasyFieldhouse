@@ -6,31 +6,6 @@ from fantasyApp import db
 from flask import current_app
 
 
-def register_user(username, email, password):
-    username = username.lower()
-    user = User.query.filter_by(username=username).first()
-    if user:  # If the user exists in our database already
-        # update that user's email and password and registration status
-        user.email = email
-        user.password = password
-        user.registered = True
-        db.session.commit()
-        return user.id
-
-    else:  # If the user does not exist in our database
-        user_data = SleeperAPI.fetch_user(username)
-        user = User(
-            id=user_data["user_id"],
-            username=user_data["username"].lower(),
-            email=email,
-            password=password,
-            registered=True,
-        )
-        db.session.add(user)
-        db.session.commit()
-        return user_data["user_id"]
-
-
 def add_unregistered_user(user_id, username):
     current_app.logger.info(f"Adding unregistered user {username} to our database")
     user = User(id=user_id, username=username.lower(), registered=False)
@@ -61,3 +36,46 @@ def add_users_from_season(season_id):
             else:
                 add_unregistered_user(user_id, user_data["display_name"])
     return team_map
+
+
+class NewUser:
+    def __init__(self, user):
+        self.user = user
+        self.user_id = user.get("user_id")
+
+    def __init__(self, username, email, password):
+        self.username = username.lower()
+        self.email = email.lower()
+        self.password = password
+        self.register_user()
+
+    def register_user(self):
+        # If the user is already in the database, register them and update their email and password
+        user = User.query.filter_by(username=self.username).first()
+        if user:
+            user.email = self.email
+            user.password = self.password
+            user.registered = True
+            self.user_id = user.id
+        else:  # Otherwise create a new user
+            db.session.add(self.create_registered_db_item(self.email, self.password))
+        db.session.commit()
+
+    def create_unregistered_db_item(self):
+        user = User(
+            id=self.user.get("user_id"),
+            username=self.user.get("username").lower,
+            registered=False,
+        )
+        return user
+
+    def create_registered_db_item(self, email, password):
+        user = User(
+            id=self.user.get("user_id"),
+            username=self.user.get("username").lower,
+            email=email,
+            password=password,
+            registered=True,
+        )
+        self.user_id = user.id
+        return user

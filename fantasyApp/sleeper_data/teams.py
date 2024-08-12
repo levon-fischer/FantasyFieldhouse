@@ -1,44 +1,44 @@
 from fantasyApp import db
-from fantasyApp.models import Team
+from fantasyApp.models import Team, TeamPlayer
 from fantasyApp.sleeper_data.utils import SleeperAPI
 from flask import current_app
 
 
-def add_team(team_data, team_id, season_id, league_id, year, name, commish):
-    current_app.logger.info(f"Adding team {team_id}|{name} to our database")
-    team = Team(
-        id=team_id,  # Season ID + Roster ID
-        season_id=season_id,
-        league_id=league_id,
-        user_id=team_data["owner_id"],
-        sleeper_roster_id=team_data["roster_id"],
-        name=name,
-        year=year,
-        wins=team_data["settings"]["wins"],
-        losses=team_data["settings"]["losses"],
-        ties=team_data["settings"]["ties"],
-        points_for=team_data["settings"]["fpts"],
-        is_commish=commish,
-    )
-    db.session.add(team)
-    db.session.commit()
+class NewTeam:
+    def __init__(self, team, season_id, league_id, map, year, division):
+        self.team = team
+        self.season_id = season_id
+        self.league_id = league_id
+        self.team_name = map.get("team_name")
+        self.team_id = int(str(self.season_id) + str(self.roster_id))
+        self.roster_id = team.get("roster_id")
+        self.year = year
+        self.owner = team.get("owner_id")
+        self.is_commish = map.get("commish")
+        self.division = division
 
+        self.add_players()
 
-def add_teams_from_season(season_id, league_id, year, team_map):
-    # Fetch the teams from the season
-    teams_data = SleeperAPI.fetch_league_rosters(season_id)
-    if teams_data:  # If the season has teams
-        roster_map = {}
-        for team_data in teams_data:
-            owner_id = team_data.get("owner_id", None)
-            if owner_id is None:
-                continue
-            name = team_map.get(owner_id, {}).get("team_name", "Unknown")
-            commish = team_map.get(owner_id, {}).get("commish", False)
-            team_id = str(season_id) + str(team_data["roster_id"])
-            roster_id = team_data["roster_id"]
-            roster_map[roster_id] = {}
-            roster_map[roster_id]["owner_id"] = owner_id
-            roster_map[roster_id]["team_id"] = team_id
-            add_team(team_data, team_id, season_id, league_id, year, name, commish)
-        return roster_map
+    players_to_add = []
+
+    def create_team_db_item(self):
+        team = Team(
+            id=self.team_id,
+            sleeper_roster_id=self.roster_id,
+            name=self.team_name,
+            year=self.year,
+            is_commish=self.is_commish,
+            division=self.division,
+            owner=self.owner,
+            season=self.season_id,
+            league=self.league_id,
+        )
+        return team
+
+    def add_players(self):
+        # TODO: Figure out how to match nicknames for the players
+        players = self.team.get("players")
+        players_to_add = []
+        for player in players:
+            players_to_add.append(TeamPlayer(team=self.team_id, player=player))
+        db.session.add_all(players_to_add)

@@ -11,7 +11,7 @@ from fantasyApp.users.forms import (
     ResetPasswordForm,
 )
 from fantasyApp.users.utils import save_picture, send_reset_email
-from fantasyApp.sleeper_data.users import register_user
+from fantasyApp.sleeper_data.users import NewUser
 from fantasyApp.sleeper_data.leagues import check_for_new_leagues
 
 
@@ -28,7 +28,7 @@ def register():
             "utf-8"
         )
         # Create a new user or register an existing user
-        user_id = register_user(form.username.data, form.email.data, hashed_password)
+        user_id = NewUser(form.username.data, form.email.data, hashed_password).user_id
         # Build out the user's profile by adding all their data to the database
         check_for_new_leagues(user_id)
         flash(f"Your account has been created! You are now able to log in", "success")
