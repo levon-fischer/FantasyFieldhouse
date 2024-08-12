@@ -116,6 +116,16 @@ class SleeperAPI:
         return SleeperAPI.fetch_data(f"league/{league_id}/losers_bracket")
 
     @staticmethod
+    def fetch_league_drafts(league_id: int) -> list[dict]:
+        """
+        Fetches all drafts for a league. A league can have multiple drafts, especially dynasty leagues.
+        Drafts are sorted by most recent to earliest. Most leagues should only have one draft.
+        :param league_id: The sleeper ID of the league
+        :return: A list of dictionaries containing draft data for each draft in that league.
+        """
+        return SleeperAPI.fetch_data(f"league/{league_id}/drafts")
+
+    @staticmethod
     def fetch_draft_data(draft_id: int) -> dict:
         """
         Fetches a specific draft's data from the Sleeper API.

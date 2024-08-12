@@ -6,7 +6,25 @@ from datetime import datetime
 
 
 class NewDraft:
-    def __init__(self, draft):
+    """
+    A class to represent a new draft. This class will create a new draft in the database and add all the draft positions
+    and draft picks to the database.
+    :ivar draft: The draft data from the Sleeper API.
+    :ivar draft_id: The ID of the draft.
+    :ivar settings: The settings for the draft.
+    :ivar league_id: The ID of the league.
+    :ivar draft_slots: A dictionary mapping draft slots to roster IDs.
+    :ivar draft_picks: A list of draft picks.
+    :ivar draft_items_to_add: A list of draft items to add to the database.
+    """
+    draft_items_to_add = []
+
+    def __init__(self, draft: dict) -> None:
+        """
+        Initialize the NewDraft class with the draft data and add all the positions and picks to the database. This does
+        not add the draft itself to the database or commit the session.
+        :param draft: A dictionary of draft data from the Sleeper API.
+        """
         self.draft = draft
         self.draft_id = draft.get("draft_id")
         self.settings = draft.get("settings")
@@ -20,9 +38,11 @@ class NewDraft:
         self.create_draft_picks()
         db.session.add_all(self.draft_items_to_add)
 
-    draft_items_to_add = []
-
-    def create_draft_db_item(self):
+    def create_draft_db_item(self) -> Draft:
+        """
+        Create the draft database item.
+        :return: The draft database item.
+        """
         draft = Draft(
             id=self.draft_id,
             status=self.draft.get("status"),
@@ -36,14 +56,20 @@ class NewDraft:
         )
         return draft
 
-    def create_draft_positions(self):
+    def create_draft_positions(self) -> None:
+        """
+        Create the draft positions for the draft. Adds the draft positions to the draft_items_to_add list.
+        """
         for position, roster_id in self.draft_slots.items():
             team_id = int(str(self.league_id) + str(roster_id))
             self.draft_items_to_add.append(
                 DraftPosition(draft=self.draft_id, team=team_id, position=position)
             )
 
-    def create_draft_picks(self):
+    def create_draft_picks(self) -> None:
+        """
+        Create the draft picks for the draft. Adds the draft picks to the draft_items_to_add list.
+        """
         if self.draft_picks:
             for pick in self.draft_picks:
                 team_id = int(str(self.league_id) + str(pick.get("roster_id")))

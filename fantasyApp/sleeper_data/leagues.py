@@ -97,8 +97,9 @@ class LeagueTree:
             # check if it exists in our database
             prev_season_in_db = Season.query.filter_by(id=prev_season_id).first()
             if not prev_season_in_db:
-                # if it doesn't, add to list of seasons to add and continue down the graph
+                # if it doesn't, add it to the list of seasons to add
                 self.seasons_to_add.append(season_data)
+                # and then continue down the graph by calling this function recursively with the previous season
                 self.dfs_for_seasons_to_add(
                     SleeperAPI.fetch_league_details(prev_season_id)
                 )
